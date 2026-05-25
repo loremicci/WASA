@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Validate API",
+            "type": "shell",
+            "command": "npx --yes @apidevtools/swagger-cli validate doc/api.yaml",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

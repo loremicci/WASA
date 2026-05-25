@@ -12,5 +12,5 @@ docker-compose.log
 /doc/json
 /doc/markdown
 
-.vscode/*
-!.vscode/extensions.json
+#.vscode/*
+#!.vscode/extensions.json
