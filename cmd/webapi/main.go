@@ -69,6 +69,11 @@ func run() error {
 		return err
 	}
 
+	// Ensure uploads directory exists
+	if err := os.MkdirAll("uploads", 0755); err != nil {
+		return fmt.Errorf("creating uploads directory: %w", err)
+	}
+
 	// Init logging
 	logger := logrus.New()
 	logger.SetOutput(os.Stdout)
@@ -173,8 +178,6 @@ func run() error {
 
 		// Log the status of this shutdown.
 		switch {
-		case sig == syscall.SIGSTOP:
-			return errors.New("integrity issue caused shutdown")
 		case err != nil:
 			return fmt.Errorf("could not stop server gracefully: %w", err)
 		}
