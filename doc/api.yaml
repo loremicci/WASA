@@ -6,6 +6,19 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local server
+tags:
+  - name: login
+    description: Login operations
+  - name: users
+    description: User operations
+  - name: groups
+    description: Group operations
+  - name: conversations
+    description: Conversation operations
+  - name: messages
+    description: Message operations
+  - name: reactions
+    description: Reaction operations
 security:
   - BearerAuth: []
 
@@ -18,29 +31,58 @@ components:
       
   schemas:
     User:
+      description: A user in the WASAText system
       type: object
       properties:
         identifier:
+          description: User identifier
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         username:
+          description: User's chosen name
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         photoUrl:
+          description: User's profile photo URL
           type: string
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 256
       required:
         - identifier
         - username
         
     Group:
+      description: A group conversation in the WASAText system
       type: object
       properties:
         identifier:
+          description: Group identifier
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         name:
+          description: Group name
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         photoUrl:
+          description: Group photo URL
           type: string
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 256
         members:
+          description: List of group members
           type: array
+          minItems: 0
+          maxItems: 10000
           items:
             $ref: '#/components/schemas/User'
       required:
@@ -48,63 +90,116 @@ components:
         - name
         
     Conversation:
+      description: A conversation metadata object
       type: object
       properties:
         identifier:
-          type: string
           description: Conversation identifier
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         isGroup:
+          description: Indicates if the conversation is a group
           type: boolean
         name:
-          type: string
           description: Other person's username or group name
-        photoUrl:
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
+        photoUrl:
+          description: Conversation photo URL
+          type: string
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 256
         latestMessageTimestamp:
+          description: Timestamp of the latest message
           type: string
           format: date-time
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 64
         latestMessagePreview:
-          type: string
           description: Snippet of the text or an icon indicator for a photo
+          type: string
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 1024
       required:
         - identifier
         - isGroup
         - name
         
     Reaction:
+      description: A reaction to a message
       type: object
       properties:
         emoticon:
+          description: Emoji character representing the reaction
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 16
         user:
+          description: User who reacted
           $ref: '#/components/schemas/User'
       required:
         - emoticon
         - user
 
     Message:
+      description: A single message in a conversation
       type: object
       properties:
         identifier:
+          description: Message identifier
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         conversationId:
+          description: Conversation identifier
           type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         sender:
+          description: Sender of the message
           $ref: '#/components/schemas/User'
         timestamp:
+          description: Message timestamp
           type: string
           format: date-time
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
         type:
+          description: Type of message content
           type: string
           enum: [text, photo]
+          pattern: '^(text|photo)$'
+          minLength: 4
+          maxLength: 5
         content:
-          type: string
           description: Text content or photo URL
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 65535
         status:
+          description: Message read status
           type: string
           enum: [sent, received, read]
+          pattern: '^(sent|received|read)$'
+          minLength: 4
+          maxLength: 8
         reactions:
+          description: Reactions to this message
           type: array
+          minItems: 0
+          maxItems: 1000
           items:
             $ref: '#/components/schemas/Reaction'
       required:
@@ -126,15 +221,17 @@ paths:
         and an identifier is returned.
         If the user exists, the user identifier is returned.
       operationId: doLogin
-      security: [] # No auth required for login
+      security: []
       requestBody:
         description: User details
         content:
           application/json:
             schema:
+              description: Login request payload
               type: object
               properties:
                 name:
+                  description: Username to login with
                   type: string
                   example: Maria
                   pattern: '^[a-zA-Z0-9]+$'
@@ -149,30 +246,44 @@ paths:
           content:
             application/json:
               schema:
+                description: Login response
                 type: object
                 properties:
                   identifier:
+                    description: The returned identifier token
                     type: string
                     example: "abcdef012345"
+                    pattern: '^.*$'
+                    minLength: 1
+                    maxLength: 64
   
   /users:
     get:
       tags: ["users"]
       summary: Search users
+      description: Search users by username query
       operationId: searchUsers
       parameters:
         - name: username
           in: query
           required: false
+          description: Username substring to search
           schema:
+            description: Username query parameter schema
             type: string
+            pattern: '^.*$'
+            minLength: 1
+            maxLength: 64
       responses:
         '200':
           description: List of users matching search
           content:
             application/json:
               schema:
+                description: Array of matched users
                 type: array
+                minItems: 0
+                maxItems: 1000
                 items:
                   $ref: '#/components/schemas/User'
 
@@ -180,62 +291,89 @@ paths:
     put:
       tags: ["users"]
       summary: Update my username
+      description: Update the authenticated user's name
       operationId: setMyUserName
       requestBody:
+        description: Request body to update username
         required: true
         content:
           application/json:
             schema:
+              description: Username update payload
               type: object
               properties:
                 name:
+                  description: New username
                   type: string
+                  pattern: '^[a-zA-Z0-9]+$'
+                  minLength: 3
+                  maxLength: 16
               required:
                 - name
       responses:
-        '200':
+        '204':
           description: Name updated successfully
           
   /users/me/photo:
     put:
       tags: ["users"]
       summary: Update my profile photo
+      description: Upload a new profile photo
       operationId: setMyPhoto
       requestBody:
+        description: Profile photo upload payload
         required: true
         content:
           multipart/form-data:
             schema:
+              description: Multipart form payload for photo
               type: object
               properties:
                 photo:
+                  description: The photo file
                   type: string
                   format: binary
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 10000000
               required:
                 - photo
       responses:
-        '200':
+        '204':
           description: Photo updated successfully
           
   /groups:
     post:
       tags: ["groups"]
       summary: Create a new group
+      description: Create a new group with the given name and members
       operationId: createGroup
       requestBody:
+        description: Group creation payload
         required: true
         content:
           application/json:
             schema:
+              description: Group creation schema
               type: object
               properties:
                 name:
+                  description: Name of the new group
                   type: string
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 64
                 members:
+                  description: List of user identifiers to add
                   type: array
+                  minItems: 0
+                  maxItems: 1000
                   items:
+                    description: User identifier string
                     type: string
-                    description: User identifiers to invite
+                    pattern: '^.*$'
+                    minLength: 1
+                    maxLength: 64
               required:
                 - name
       responses:
@@ -247,95 +385,137 @@ paths:
                 $ref: '#/components/schemas/Group'
                 
   /groups/{groupId}/name:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: ID of the group
+        schema:
+          description: Group ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     put:
       tags: ["groups"]
       summary: Update group name
+      description: Update the name of a specific group
       operationId: setGroupName
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          schema:
-            type: string
       requestBody:
+        description: Group name update payload
         required: true
         content:
           application/json:
             schema:
+              description: Name update schema
               type: object
               properties:
                 name:
+                  description: New group name
                   type: string
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 64
               required:
                 - name
       responses:
-        '200':
+        '204':
           description: Group name updated
 
   /groups/{groupId}/photo:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: ID of the group
+        schema:
+          description: Group ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     put:
       tags: ["groups"]
       summary: Update group photo
+      description: Update the photo of a specific group
       operationId: setGroupPhoto
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          schema:
-            type: string
       requestBody:
+        description: Photo update payload
         required: true
         content:
           multipart/form-data:
             schema:
+              description: Multipart photo payload
               type: object
               properties:
                 photo:
+                  description: Photo file
                   type: string
                   format: binary
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 10000000
               required:
                 - photo
       responses:
-        '200':
+        '204':
           description: Group photo updated
           
   /groups/{groupId}/members:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: ID of the group
+        schema:
+          description: Group ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     post:
       tags: ["groups"]
       summary: Add a user to the group
+      description: Add an existing user to this group
       operationId: addToGroup
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          schema:
-            type: string
       requestBody:
+        description: Add member payload
         required: true
         content:
           application/json:
             schema:
+              description: Member addition schema
               type: object
               properties:
                 userId:
+                  description: User ID to add
                   type: string
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 64
               required:
                 - userId
       responses:
-        '200':
+        '204':
           description: User added successfully
           
   /groups/{groupId}/members/me:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: ID of the group
+        schema:
+          description: Group ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     delete:
       tags: ["groups"]
       summary: Leave a group
+      description: Remove the authenticated user from the group
       operationId: leaveGroup
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '204':
           description: Left group successfully
@@ -352,7 +532,10 @@ paths:
           content:
             application/json:
               schema:
+                description: Array of conversations
                 type: array
+                minItems: 0
+                maxItems: 1000
                 items:
                   $ref: '#/components/schemas/Conversation'
     post:
@@ -361,15 +544,20 @@ paths:
       description: Create a 1-on-1 conversation by passing another user's identifier
       operationId: createConversation
       requestBody:
+        description: Conversation creation payload
         required: true
         content:
           application/json:
             schema:
+              description: Conversation creation schema
               type: object
               properties:
                 userId:
-                  type: string
                   description: Identifier of the user to start a conversation with
+                  type: string
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 64
               required:
                 - userId
       responses:
@@ -381,53 +569,80 @@ paths:
                 $ref: '#/components/schemas/Conversation'
 
   /conversations/{conversationId}:
+    parameters:
+      - name: conversationId
+        in: path
+        required: true
+        description: ID of the conversation
+        schema:
+          description: Conversation ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     get:
       tags: ["conversations"]
       summary: Get conversation messages
       description: Get messages in a conversation in reverse chronological order
       operationId: getConversation
-      parameters:
-        - name: conversationId
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: List of messages
           content:
             application/json:
               schema:
+                description: Array of messages
                 type: array
+                minItems: 0
+                maxItems: 10000
                 items:
                   $ref: '#/components/schemas/Message'
                   
   /conversations/{conversationId}/messages:
+    parameters:
+      - name: conversationId
+        in: path
+        required: true
+        description: ID of the conversation
+        schema:
+          description: Conversation ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     post:
       tags: ["messages"]
       summary: Send a message
+      description: Send a message (text or photo) to the conversation
       operationId: sendMessage
-      parameters:
-        - name: conversationId
-          in: path
-          required: true
-          schema:
-            type: string
       requestBody:
+        description: Message payload
         required: true
         content:
           multipart/form-data:
             schema:
+              description: Multipart message payload
               type: object
               properties:
                 text:
+                  description: Text content
                   type: string
+                  pattern: '^.*$'
+                  minLength: 0
+                  maxLength: 65535
                 photo:
+                  description: Photo file
                   type: string
                   format: binary
+                  pattern: '^.*$'
+                  minLength: 0
+                  maxLength: 10000000
                 replyTo:
-                  type: string
                   description: Identifier of the message to reply to
+                  type: string
+                  pattern: '^.*$'
+                  minLength: 0
+                  maxLength: 64
       responses:
         '201':
           description: Message sent
@@ -437,41 +652,58 @@ paths:
                 $ref: '#/components/schemas/Message'
                 
   /messages/{messageId}:
+    parameters:
+      - name: messageId
+        in: path
+        required: true
+        description: ID of the message
+        schema:
+          description: Message ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     delete:
       tags: ["messages"]
       summary: Delete a sent message
+      description: Delete a message sent by the authenticated user
       operationId: deleteMessage
-      parameters:
-        - name: messageId
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '204':
           description: Message deleted
 
   /messages/{messageId}/forward:
+    parameters:
+      - name: messageId
+        in: path
+        required: true
+        description: ID of the message
+        schema:
+          description: Message ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
     post:
       tags: ["messages"]
       summary: Forward a message
+      description: Forward an existing message to another conversation
       operationId: forwardMessage
-      parameters:
-        - name: messageId
-          in: path
-          required: true
-          schema:
-            type: string
       requestBody:
+        description: Forward payload
         required: true
         content:
           application/json:
             schema:
+              description: Forward schema
               type: object
               properties:
                 conversationId:
-                  type: string
                   description: The destination conversation identifier
+                  type: string
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 64
               required:
                 - conversationId
       responses:
@@ -483,40 +715,41 @@ paths:
                 $ref: '#/components/schemas/Message'
 
   /messages/{messageId}/comments/{emoticon}:
+    parameters:
+      - name: messageId
+        in: path
+        required: true
+        description: ID of the message
+        schema:
+          description: Message ID parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 64
+      - name: emoticon
+        in: path
+        required: true
+        description: Emoticon character
+        schema:
+          description: Emoticon parameter
+          type: string
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 16
     put:
       tags: ["messages", "reactions"]
       summary: Comment (react) to a message
+      description: Add an emoticon reaction to a message
       operationId: commentMessage
-      parameters:
-        - name: messageId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: emoticon
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
-        '200':
+        '204':
           description: Reaction added
           
     delete:
       tags: ["messages", "reactions"]
       summary: Uncomment (remove reaction) from a message
+      description: Remove a specific emoticon reaction from a message
       operationId: uncommentMessage
-      parameters:
-        - name: messageId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: emoticon
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '204':
           description: Reaction removed

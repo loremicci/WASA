@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"net/http"
-	"github.com/julienschmidt/httprouter"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
+	"github.com/julienschmidt/httprouter"
+	"net/http"
 )
 
 type LoginRequest struct {
@@ -36,5 +36,5 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(LoginResponse{Identifier: id})
+	_ = json.NewEncoder(w).Encode(LoginResponse{Identifier: id})
 }

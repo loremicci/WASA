@@ -13,7 +13,7 @@ func (db *appdbimpl) CreateGroup(name string, memberIds []string) (Group, error)
 	if err != nil {
 		return Group{}, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Insert into conversations
 	_, err = tx.Exec("INSERT INTO conversations (id, type, name, photo_url) VALUES (?, 'group', ?, '')", id, name)

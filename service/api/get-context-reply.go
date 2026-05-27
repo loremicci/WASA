@@ -12,4 +12,3 @@ package api
 // 	w.Header().Set("content-type", "text/plain")
 // 	_, _ = w.Write([]byte("Hello World!"))
 // }
-

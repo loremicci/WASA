@@ -2,9 +2,9 @@ package api
 
 import (
 	"context"
+	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strings"
-	"github.com/julienschmidt/httprouter"
 )
 
 type contextKey string

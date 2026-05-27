@@ -12,7 +12,7 @@ func (db *appdbimpl) SendMessage(msg Message, replyTo string) (Message, error) {
 	msg.Timestamp = time.Now()
 
 	// Update last_read for the sender so they are marked as having read up to this point
-	db.c.Exec("UPDATE conversation_members SET last_read = ?, last_received = ? WHERE conversation_id = ? AND user_id = ?", msg.Timestamp, msg.Timestamp, msg.ConversationID, msg.Sender.ID)
+	_, _ = db.c.Exec("UPDATE conversation_members SET last_read = ?, last_received = ? WHERE conversation_id = ? AND user_id = ?", msg.Timestamp, msg.Timestamp, msg.ConversationID, msg.Sender.ID)
 
 	// Send message
 	var replyToVal interface{} = nil

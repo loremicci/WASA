@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/gofrs/uuid"
 	"sort"
 	"time"
@@ -106,7 +107,7 @@ func (db *appdbimpl) CreateConversation(userId1 string, userId2 string) (Convers
 		c.PhotoURL = otherUser.PhotoURL
 		return c, nil
 	}
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return Conversation{}, err
 	}
 
@@ -117,7 +118,7 @@ func (db *appdbimpl) CreateConversation(userId1 string, userId2 string) (Convers
 	if err != nil {
 		return Conversation{}, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	_, err = tx.Exec("INSERT INTO conversations (id, type, name, photo_url) VALUES (?, 'direct', '', '')", id)
 	if err != nil {
@@ -150,7 +151,7 @@ func (db *appdbimpl) CreateConversation(userId1 string, userId2 string) (Convers
 func (db *appdbimpl) GetConversationMessages(userId string, conversationId string) ([]Message, error) {
 	// Update last_read for the user since they are opening it
 	now := time.Now()
-	db.c.Exec("UPDATE conversation_members SET last_read = ? WHERE conversation_id = ? AND user_id = ?", now, conversationId, userId)
+	_, _ = db.c.Exec("UPDATE conversation_members SET last_read = ? WHERE conversation_id = ? AND user_id = ?", now, conversationId, userId)
 
 	// Fetch messages
 	query := `
@@ -174,7 +175,7 @@ func (db *appdbimpl) GetConversationMessages(userId string, conversationId strin
 			return nil, err
 		}
 		m.ConversationID = conversationId
-		
+
 		sender, _ := db.GetUserByID(senderId)
 		m.Sender = sender
 

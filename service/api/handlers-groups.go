@@ -2,18 +2,18 @@ package api
 
 import (
 	"encoding/json"
+	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
+	"github.com/gofrs/uuid"
+	"github.com/julienschmidt/httprouter"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"github.com/gofrs/uuid"
-	"github.com/julienschmidt/httprouter"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 )
 
 func (rt *_router) createGroup(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 	userId := GetUserIDFromContext(r)
-	
+
 	var req struct {
 		Name    string   `json:"name"`
 		Members []string `json:"members"`
@@ -22,7 +22,7 @@ func (rt *_router) createGroup(w http.ResponseWriter, r *http.Request, ps httpro
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	
+
 	// Ensure creator is in the members list
 	found := false
 	for _, m := range req.Members {
@@ -40,10 +40,10 @@ func (rt *_router) createGroup(w http.ResponseWriter, r *http.Request, ps httpro
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(group)
+	_ = json.NewEncoder(w).Encode(group)
 }
 
 func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
@@ -55,46 +55,46 @@ func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	
+
 	if err := rt.db.SetGroupName(groupId, req.Name); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 	groupId := ps.ByName("groupId")
-	
+
 	file, _, err := r.FormFile("photo")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
-	
+
 	u, _ := uuid.NewV4()
-	filename := u.String() + ".jpg" 
+	filename := u.String() + ".jpg"
 	outPath := filepath.Join("uploads", filename)
-	
+
 	out, err := os.Create(outPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer out.Close()
-	
+
 	if _, err := io.Copy(out, file); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	
+
 	if err := rt.db.SetGroupPhoto(groupId, "/uploads/"+filename); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	
-	w.WriteHeader(http.StatusOK)
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
@@ -106,18 +106,18 @@ func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, ps httprou
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	
+
 	if err := rt.db.AddToGroup(groupId, req.UserId); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 	groupId := ps.ByName("groupId")
 	userId := GetUserIDFromContext(r)
-	
+
 	if err := rt.db.LeaveGroup(groupId, userId); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

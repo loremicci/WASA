@@ -30,7 +30,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/conversations/:conversationId/messages", rt.AuthMiddleware(rt.wrap(rt.sendMessage)))
 	rt.router.DELETE("/messages/:messageId", rt.AuthMiddleware(rt.wrap(rt.deleteMessage)))
 	rt.router.POST("/messages/:messageId/forward", rt.AuthMiddleware(rt.wrap(rt.forwardMessage)))
-	
+
 	// Reactions
 	rt.router.PUT("/messages/:messageId/comments/:emoticon", rt.AuthMiddleware(rt.wrap(rt.commentMessage)))
 	rt.router.DELETE("/messages/:messageId/comments/:emoticon", rt.AuthMiddleware(rt.wrap(rt.uncommentMessage)))
