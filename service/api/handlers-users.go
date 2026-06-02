@@ -1,14 +1,12 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/json"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
-	"github.com/gofrs/uuid"
+	"github.com/loremicci/WASA/service/api/reqcontext"
 	"github.com/julienschmidt/httprouter"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 func (rt *_router) searchUsers(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
@@ -46,30 +44,27 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 	userId := GetUserIDFromContext(r)
 
-	file, _, err := r.FormFile("photo")
+	file, header, err := r.FormFile("photo")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	u, _ := uuid.NewV4()
-	filename := u.String() + ".jpg"
-	outPath := filepath.Join("uploads", filename)
-
-	out, err := os.Create(outPath)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer out.Close()
 
-	if _, err := io.Copy(out, file); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "image/jpeg"
 	}
+	base64Str := base64.StdEncoding.EncodeToString(bytes)
+	dataURL := "data:" + contentType + ";base64," + base64Str
 
-	if err := rt.db.SetMyPhoto(userId, "/uploads/"+filename); err != nil {
+	if err := rt.db.SetMyPhoto(userId, dataURL); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -9,6 +9,10 @@ import (
 )
 
 func (db *appdbimpl) GetMyConversations(userId string) ([]Conversation, error) {
+	// Update last_received for this user since they are fetching the list
+	now := time.Now()
+	_, _ = db.c.Exec("UPDATE conversation_members SET last_received = ? WHERE user_id = ?", now, userId)
+
 	query := `
 		SELECT c.id, c.type, c.name, c.photo_url,
 			(SELECT timestamp FROM messages m WHERE m.conversation_id = c.id ORDER BY timestamp DESC LIMIT 1),

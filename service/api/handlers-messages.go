@@ -1,15 +1,13 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/json"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
-	"github.com/gofrs/uuid"
+	"github.com/loremicci/WASA/service/api/reqcontext"
+	"github.com/loremicci/WASA/service/database"
 	"github.com/julienschmidt/httprouter"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
@@ -29,19 +27,21 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	replyTo := r.FormValue("replyTo")
 	text := r.FormValue("text")
 
-	file, _, errFile := r.FormFile("photo")
+	file, header, errFile := r.FormFile("photo")
 	if errFile == nil {
 		defer file.Close()
-		u, _ := uuid.NewV4()
-		filename := u.String() + ".jpg"
-		outPath := filepath.Join("uploads", filename)
-		out, err := os.Create(outPath)
-		if err == nil {
-			_, _ = io.Copy(out, file)
-			out.Close()
+		bytes, err := io.ReadAll(file)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+		contentType := header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = "image/jpeg"
+		}
+		base64Str := base64.StdEncoding.EncodeToString(bytes)
 		msg.Type = "photo"
-		msg.Content = "/uploads/" + filename
+		msg.Content = "data:" + contentType + ";base64," + base64Str
 	} else if text != "" {
 		msg.Type = "text"
 		msg.Content = text
