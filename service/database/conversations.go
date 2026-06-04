@@ -153,13 +153,20 @@ func (db *appdbimpl) CreateConversation(userId1 string, userId2 string) (Convers
 }
 
 func (db *appdbimpl) GetConversationMessages(userId string, conversationId string) ([]Message, error) {
+	// Check if user is a member
+	var isMember bool
+	err := db.c.QueryRow("SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ?", conversationId, userId).Scan(&isMember)
+	if err != nil {
+		return nil, errors.New("user is not a member of this conversation")
+	}
+
 	// Update last_read for the user since they are opening it
 	now := time.Now()
 	_, _ = db.c.Exec("UPDATE conversation_members SET last_read = ? WHERE conversation_id = ? AND user_id = ?", now, conversationId, userId)
 
 	// Fetch messages
 	query := `
-		SELECT id, sender_id, content, type, timestamp, reply_to 
+		SELECT id, sender_id, content, photo, type, timestamp, reply_to, is_forwarded
 		FROM messages 
 		WHERE conversation_id = ? 
 		ORDER BY timestamp DESC
@@ -175,9 +182,13 @@ func (db *appdbimpl) GetConversationMessages(userId string, conversationId strin
 		var m Message
 		var senderId string
 		var replyTo sql.NullString
-		if err := rows.Scan(&m.ID, &senderId, &m.Content, &m.Type, &m.Timestamp, &replyTo); err != nil {
+		var photo sql.NullString
+		var forwarded sql.NullBool
+		if err := rows.Scan(&m.ID, &senderId, &m.Content, &photo, &m.Type, &m.Timestamp, &replyTo, &forwarded); err != nil {
 			return nil, err
 		}
+		m.Photo = photo.String
+		m.Forwarded = forwarded.Bool
 		m.ConversationID = conversationId
 
 		sender, _ := db.GetUserByID(senderId)

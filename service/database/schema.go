@@ -27,9 +27,11 @@ func createSchema(db *sql.DB) error {
 			conversation_id TEXT NOT NULL,
 			sender_id TEXT NOT NULL,
 			content TEXT,
+			photo TEXT,
 			type TEXT NOT NULL,
 			timestamp DATETIME NOT NULL,
-			reply_to TEXT
+			reply_to TEXT,
+			is_forwarded BOOLEAN DEFAULT FALSE
 		);`,
 		`CREATE TABLE IF NOT EXISTS reactions (
 			message_id TEXT,

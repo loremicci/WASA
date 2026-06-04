@@ -6,7 +6,7 @@ const props = defineProps({
 	currentUser: Object
 })
 
-const emit = defineEmits(['logout'])
+const emit = defineEmits(['logout', 'updateUser'])
 
 // State
 const conversations = ref([])
@@ -293,9 +293,14 @@ async function saveProfile() {
 			await axios.put('/users/me/photo', fd)
 		}
 		showProfileModal.value = false
-		alert("Profile updated! Please re-login to see name changes everywhere.")
+		emit('updateUser', { name: profileForm.value.name.trim(), photo: profileForm.value.photo })
+		alert("Profile updated!")
 	} catch (e) {
-		alert("Failed to update profile")
+		if (e.response && e.response.status === 409) {
+			alert("Failed to update profile: Username already taken")
+		} else {
+			alert("Failed to update profile")
+		}
 	}
 }
 
@@ -334,14 +339,16 @@ function getRepliedMessage(replyId) {
 			<!-- Header -->
 			<div class="sidebar-header">
 				<div class="d-flex align-items-center w-100">
-					<div class="avatar sm me-2">{{ getInitials(currentUser.username) }}</div>
-					<div class="fw-bold flex-grow-1 text-truncate">{{ currentUser.username }}</div>
-					<button class="btn btn-sm btn-link text-muted p-1" @click="showProfileModal = true" title="Profile">
-						<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#settings"/></svg>
-					</button>
-					<button class="btn btn-sm btn-link text-muted p-1 ms-1" @click="emit('logout')" title="Logout">
-						<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#log-out"/></svg>
-					</button>
+					<div class="avatar sm me-3 shadow-sm">{{ getInitials(currentUser.username) }}</div>
+					<div class="fw-bold flex-grow-1 text-truncate fs-6" style="color: var(--accent-primary);">{{ currentUser.username }}</div>
+					<div class="d-flex gap-2">
+						<button class="glass-btn-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;" @click="showProfileModal = true" title="Profile Settings">
+							<svg class="feather" style="color: var(--accent-primary); width: 16px; height: 16px;"><use href="/feather-sprite-v4.29.0.svg#settings"/></svg>
+						</button>
+						<button class="glass-btn-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;" @click="emit('logout')" title="Log Out">
+							<svg class="feather" style="color: var(--danger); width: 16px; height: 16px;"><use href="/feather-sprite-v4.29.0.svg#log-out"/></svg>
+						</button>
+					</div>
 				</div>
 			</div>
 			
@@ -429,24 +436,35 @@ function getRepliedMessage(replyId) {
 						</div>
 
 						<div class="message-bubble" :class="{ 'mine': m.sender.identifier === myUserId }">
+							<!-- Forwarded Marker -->
+							<div v-if="m.forwarded" class="text-muted fs-8 mb-1 fst-italic">
+								<svg class="feather" style="width:12px;height:12px;margin-right:2px;"><use href="/feather-sprite-v4.29.0.svg#corner-up-right"/></svg> Forwarded
+							</div>
+
 							<!-- Reply context -->
 							<div v-if="m.replyTo" class="reply-context">
 								<div class="reply-sender">{{ getRepliedMessage(m.replyTo)?.sender.username || 'Someone' }}</div>
-								<div class="reply-text text-truncate">{{ getRepliedMessage(m.replyTo)?.content || 'Message' }}</div>
+								<div class="reply-text text-truncate">
+									<span v-if="getRepliedMessage(m.replyTo)?.photo">📷 Photo </span>
+									{{ getRepliedMessage(m.replyTo)?.content || '' }}
+								</div>
 							</div>
 							
 							<!-- Content -->
-							<div v-if="m.type === 'photo'" class="message-photo">
-								<img :src="resolveAvatar(m.content)" alt="Photo" />
+							<div v-if="m.photo" class="message-photo">
+								<img :src="resolveAvatar(m.photo)" alt="Photo" />
 							</div>
-							<div v-else class="message-text">{{ m.content }}</div>
+							<div v-if="m.content" class="message-text" :class="{'mt-2': m.photo}">{{ m.content }}</div>
 							
 							<!-- Meta: Time + Status -->
 							<div class="message-meta">
 								<span>{{ formatTime(m.timestamp) }}</span>
 								<span v-if="m.sender.identifier === myUserId" class="ms-1 status-check">
-									<svg v-if="m.status === 'received'" class="feather text-light"><use href="/feather-sprite-v4.29.0.svg#check"/></svg>
-									<svg v-if="m.status === 'read'" class="feather text-info"><use href="/feather-sprite-v4.29.0.svg#check-circle"/></svg>
+									<svg v-if="m.status !== 'read'" class="feather" style="color: #3b82f6;"><use href="/feather-sprite-v4.29.0.svg#check"/></svg>
+									<span v-if="m.status === 'read'" class="double-check" style="color: #3b82f6; display: inline-flex;">
+										<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#check"/></svg>
+										<svg class="feather" style="margin-left: -8px;"><use href="/feather-sprite-v4.29.0.svg#check"/></svg>
+									</span>
 								</span>
 							</div>
 
@@ -610,7 +628,9 @@ function getRepliedMessage(replyId) {
 	display: flex;
 	height: 100vh;
 	width: 100vw;
-	background: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
+	background-color: #f8fafc;
+	background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+	background-size: 20px 20px;
 }
 
 .sidebar {
@@ -836,38 +856,59 @@ function getRepliedMessage(replyId) {
 /* Actions Menu */
 .message-actions {
 	display: flex;
-	gap: 4px;
+	gap: 6px;
 	opacity: 0;
-	transition: opacity 0.2s;
+	transition: all 0.2s ease;
 	position: absolute;
 	top: 50%;
 	transform: translateY(-50%);
-	right: -80px;
-	background: rgba(15, 17, 26, 0.8);
-	padding: 4px;
+	left: 100%;
+	margin-left: 8px;
+	background: var(--bg-panel);
+	padding: 6px;
 	border-radius: 12px;
 	border: 1px solid var(--border-light);
+	box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+	z-index: 20;
 }
 .message-wrapper.mine .message-actions {
-	right: auto;
-	left: -80px;
+	left: auto;
+	right: 100%;
+	margin-left: 0;
+	margin-right: 8px;
 }
 .message-wrapper:hover .message-actions {
 	opacity: 1;
 }
 .message-actions button {
-	background: transparent;
-	border: none;
-	color: var(--text-secondary);
-	padding: 4px;
+	background: var(--btn-sec-bg);
+	border: 1px solid var(--border-light);
+	color: var(--accent-primary);
+	padding: 6px;
 	cursor: pointer;
-	border-radius: 6px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s;
 }
 .message-actions button:hover {
-	background: rgba(255,255,255,0.1);
+	background: var(--accent-primary);
 	color: white;
+	border-color: var(--accent-primary);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
 }
-.message-actions button .feather { width: 14px; height: 14px; }
+.message-actions button.text-danger {
+	color: var(--danger);
+}
+.message-actions button.text-danger:hover {
+	background: var(--danger);
+	color: white;
+	border-color: var(--danger);
+	box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+}
+.message-actions button .feather { width: 16px; height: 16px; }
 
 /* Emoji Picker */
 .emoji-picker-container { position: relative; }

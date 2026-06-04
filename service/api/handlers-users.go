@@ -34,6 +34,12 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	if err := rt.db.SetMyUserName(userId, body.Name); err != nil {
+		if err.Error() == "username already taken" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Username already taken"})
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

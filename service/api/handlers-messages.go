@@ -41,7 +41,8 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		}
 		base64Str := base64.StdEncoding.EncodeToString(bytes)
 		msg.Type = "photo"
-		msg.Content = "data:" + contentType + ";base64," + base64Str
+		msg.Photo = "data:" + contentType + ";base64," + base64Str
+		msg.Content = text
 	} else if text != "" {
 		msg.Type = "text"
 		msg.Content = text

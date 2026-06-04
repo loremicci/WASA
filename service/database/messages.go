@@ -2,11 +2,19 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/gofrs/uuid"
 	"time"
 )
 
 func (db *appdbimpl) SendMessage(msg Message, replyTo string) (Message, error) {
+	// Check if user is a member of the conversation
+	var isMember bool
+	err := db.c.QueryRow("SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ?", msg.ConversationID, msg.Sender.ID).Scan(&isMember)
+	if err != nil {
+		return Message{}, errors.New("user is not a member of this conversation")
+	}
+
 	u, _ := uuid.NewV4()
 	msg.ID = u.String()
 	msg.Timestamp = time.Now()
@@ -20,8 +28,8 @@ func (db *appdbimpl) SendMessage(msg Message, replyTo string) (Message, error) {
 		replyToVal = replyTo
 	}
 
-	_, err := db.c.Exec("INSERT INTO messages (id, conversation_id, sender_id, content, type, timestamp, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		msg.ID, msg.ConversationID, msg.Sender.ID, msg.Content, msg.Type, msg.Timestamp, replyToVal)
+	_, err = db.c.Exec("INSERT INTO messages (id, conversation_id, sender_id, content, photo, type, timestamp, reply_to, is_forwarded) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		msg.ID, msg.ConversationID, msg.Sender.ID, msg.Content, msg.Photo, msg.Type, msg.Timestamp, replyToVal, msg.Forwarded)
 	if err != nil {
 		return Message{}, err
 	}
@@ -38,8 +46,8 @@ func (db *appdbimpl) DeleteMessage(messageId string, userId string) error {
 
 func (db *appdbimpl) ForwardMessage(messageId string, targetConversationId string, senderId string) (Message, error) {
 	// Get original message
-	var content, msgType string
-	err := db.c.QueryRow("SELECT content, type FROM messages WHERE id = ?", messageId).Scan(&content, &msgType)
+	var content, msgType, photo sql.NullString
+	err := db.c.QueryRow("SELECT content, type, photo FROM messages WHERE id = ?", messageId).Scan(&content, &msgType, &photo)
 	if err != nil {
 		return Message{}, err
 	}
@@ -49,14 +57,17 @@ func (db *appdbimpl) ForwardMessage(messageId string, targetConversationId strin
 	msg := Message{
 		ConversationID: targetConversationId,
 		Sender:         sender,
-		Content:        content,
-		Type:           msgType,
+		Content:        content.String,
+		Photo:          photo.String,
+		Type:           msgType.String,
+		Forwarded:      true,
 	}
 
 	return db.SendMessage(msg, "")
 }
 
 func (db *appdbimpl) CommentMessage(messageId string, userId string, emoticon string) error {
+	_, _ = db.c.Exec("DELETE FROM reactions WHERE message_id = ? AND user_id = ?", messageId, userId)
 	_, err := db.c.Exec("INSERT OR IGNORE INTO reactions (message_id, user_id, emoticon) VALUES (?, ?, ?)", messageId, userId, emoticon)
 	return err
 }

@@ -36,6 +36,8 @@ type Message struct {
 	Timestamp      time.Time  `json:"timestamp"`
 	Type           string     `json:"type"` // "text" or "photo"
 	Content        string     `json:"content"`
+	Photo          string     `json:"photo"`
 	Status         string     `json:"status"` // "sent", "received", "read"
+	Forwarded      bool       `json:"forwarded"`
 	Reactions      []Reaction `json:"reactions"`
 }

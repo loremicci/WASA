@@ -50,7 +50,12 @@ func (db *appdbimpl) SearchUsers(query string) ([]User, error) {
 }
 
 func (db *appdbimpl) SetMyUserName(userId string, newName string) error {
-	_, err := db.c.Exec("UPDATE users SET name = ? WHERE id = ?", newName, userId)
+	var id string
+	err := db.c.QueryRow("SELECT id FROM users WHERE name = ?", newName).Scan(&id)
+	if err == nil && id != userId {
+		return errors.New("username already taken")
+	}
+	_, err = db.c.Exec("UPDATE users SET name = ? WHERE id = ?", newName, userId)
 	return err
 }
 

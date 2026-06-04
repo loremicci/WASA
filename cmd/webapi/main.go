@@ -1,8 +1,10 @@
 /*
-Webapi is the executable for the main web server.
-It builds a web server around APIs from `service/api`.
-Webapi connects to external resources needed (database) and starts two web servers: the API web server, and the debug.
-Everything is served via the API web server, except debug variables (/debug/vars) and profiler infos (pprof).
+WASAText API Server
+This is the main executable for the WASAText web server, built for the Web and Software Architecture exam.
+It provides RESTful APIs for the WASAText messaging application, allowing users to send messages,
+create groups, react to messages, and manage their profile.
+
+It connects to a SQLite database for persistent storage and serves the embedded Vue.js frontend (when compiled with the webui tag).
 
 Usage:
 
@@ -18,7 +20,7 @@ Return values (exit codes):
 	> 0
 		The program ended due to an error
 
-Note that this program will update the schema of the database to the latest version available (embedded in the
+Note that this program will update the schema of the SQLite database to the latest version available (embedded in the
 executable during the build).
 */
 package main

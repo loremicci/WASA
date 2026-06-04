@@ -1,0 +1,29 @@
+# Use golang alpine image for a smaller build footprint
+FROM golang:alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency files and the vendored folder
+COPY go.mod go.sum ./
+COPY vendor/ vendor/
+
+# Copy the source code
+COPY cmd/ cmd/
+COPY service/ service/
+
+# Build the binary statically
+RUN CGO_ENABLED=0 go build -o webapi ./cmd/webapi
+
+# Create a lightweight runtime image
+FROM alpine:latest
+WORKDIR /app
+
+# Copy the built executable from the builder stage
+COPY --from=builder /app/webapi .
+
+# Expose the default backend port
+EXPOSE 3000
+
+# Run the executable
+# (It will default to creating the database at /tmp/decaf.db, which is valid in an Alpine container)
+CMD ["./webapi"]

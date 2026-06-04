@@ -27,11 +27,18 @@ function onLogout() {
 	currentUser.value = null
 	isAuthenticated.value = false
 }
+
+function onUpdateUser(updatedUser) {
+	if (updatedUser.name) {
+		currentUser.value.username = updatedUser.name
+		localStorage.setItem("username", updatedUser.name)
+	}
+}
 </script>
 
 <template>
 	<LoginView v-if="!isAuthenticated" @loginSuccess="onLoginSuccess" />
-	<HomeView v-else :currentUser="currentUser" @logout="onLogout" />
+	<HomeView v-else :currentUser="currentUser" @logout="onLogout" @updateUser="onUpdateUser" />
 </template>
 
 <style>
