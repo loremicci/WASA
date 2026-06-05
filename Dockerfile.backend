@@ -21,6 +21,9 @@ WORKDIR /app
 # Copy the built executable from the builder stage
 COPY --from=builder /app/webapi .
 
+# Change ownership of the app directory to UID 1000 so the app can create the database and uploads directory
+RUN chown -R 1000:1000 /app
+
 # Expose the default backend port
 EXPOSE 3000
 

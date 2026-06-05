@@ -6,7 +6,7 @@ WORKDIR /app
 COPY webui/package.json webui/yarn.lock* ./
 
 # Install dependencies
-RUN yarn install
+RUN corepack enable && yarn install
 
 # Copy frontend source code and build
 COPY webui/ ./
