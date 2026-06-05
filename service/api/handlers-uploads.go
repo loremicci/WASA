@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/loremicci/WASA/service/api/reqcontext"
 	"github.com/julienschmidt/httprouter"
+	"github.com/loremicci/WASA/service/api/reqcontext"
 	"net/http"
 	"path/filepath"
 )

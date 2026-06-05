@@ -38,8 +38,8 @@ package api
 
 import (
 	"errors"
-	"github.com/loremicci/WASA/service/database"
 	"github.com/julienschmidt/httprouter"
+	"github.com/loremicci/WASA/service/database"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )

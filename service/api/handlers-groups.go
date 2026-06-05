@@ -3,8 +3,8 @@ package api
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/loremicci/WASA/service/api/reqcontext"
 	"github.com/julienschmidt/httprouter"
+	"github.com/loremicci/WASA/service/api/reqcontext"
 	"io"
 	"net/http"
 )

@@ -36,12 +36,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/ardanlabs/conf"
 	"github.com/loremicci/WASA/service/api"
 	"github.com/loremicci/WASA/service/database"
 	"github.com/loremicci/WASA/service/globaltime"
-	"github.com/ardanlabs/conf"
-	_ "modernc.org/sqlite"
 	"github.com/sirupsen/logrus"
+	_ "modernc.org/sqlite"
 )
 
 // main is the program entry point. The only purpose of this function is to call run() and set the exit code if there is

@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/loremicci/WASA/service/api/reqcontext"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
+	"github.com/loremicci/WASA/service/api/reqcontext"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )

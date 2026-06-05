@@ -143,7 +143,6 @@ components:
           minLength: 1
           maxLength: 16
         user:
-          description: User who reacted
           $ref: '#/components/schemas/User'
       required:
         - emoticon
@@ -166,7 +165,6 @@ components:
           minLength: 1
           maxLength: 64
         sender:
-          description: Sender of the message
           $ref: '#/components/schemas/User'
         timestamp:
           description: Message timestamp
@@ -566,7 +564,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Conversation'
+                allOf:
+                  - $ref: '#/components/schemas/Conversation'
 
   /conversations/{conversationId}:
     parameters:

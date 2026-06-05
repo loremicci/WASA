@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/julienschmidt/httprouter"
 	"github.com/loremicci/WASA/service/api/reqcontext"
 	"github.com/loremicci/WASA/service/database"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 )
 
