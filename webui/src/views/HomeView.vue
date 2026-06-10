@@ -36,6 +36,7 @@ const showForwardModal = ref(false)
 const profileForm = ref({ name: props.currentUser.username, photo: null })
 const groupForm = ref({ name: '', search: '', results: [], selectedUsers: [] })
 const groupInfoForm = ref({ name: '', photo: null, search: '', results: [] })
+const forwardForm = ref({ search: '', results: [] })
 const forwardMsgId = ref(null)
 
 // Polling interval
@@ -95,6 +96,22 @@ async function doGroupSearch() {
 
 async function doGroupInfoSearch() {
 	groupInfoForm.value.results = await fetchUserSearch(groupInfoForm.value.search)
+}
+
+async function doForwardSearch() {
+	forwardForm.value.results = await fetchUserSearch(forwardForm.value.search)
+}
+
+async function doForwardToUser(user) {
+	try {
+		const res = await axios.post('/conversations', { userId: user.identifier })
+		const convId = res.data.identifier
+		await doForward(convId)
+		forwardForm.value.search = ''
+		forwardForm.value.results = []
+	} catch (e) {
+		alert("Failed to forward to user")
+	}
 }
 
 async function startDirectChat(user) {
@@ -630,8 +647,21 @@ function getRepliedMessage(replyId) {
 		<div v-if="showForwardModal" class="modal-overlay" @click.self="showForwardModal = false">
 			<div class="modal-content-glass">
 				<h4 class="mb-3">Forward Message</h4>
-				<p class="text-muted fs-7">Select a conversation to forward to:</p>
-				<div class="conv-list" style="max-height: 300px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+				
+				<!-- Search All Users -->
+				<div class="mb-3">
+					<label class="text-muted fs-7">Search for a new user:</label>
+					<input v-model="forwardForm.search" @input="doForwardSearch" type="text" class="form-control glass-input mb-2" placeholder="Search users to forward to..." />
+					<div class="search-results-box mb-2 border border-secondary rounded p-2" style="max-height:120px; overflow-y:auto;" v-if="forwardForm.search">
+						<div v-for="u in forwardForm.results" :key="u.identifier" class="d-flex align-items-center justify-content-between p-1 border-bottom border-dark">
+							<span>{{ u.username }}</span>
+							<button class="btn btn-sm btn-primary py-0 px-2" @click="doForwardToUser(u)">Forward</button>
+						</div>
+					</div>
+				</div>
+
+				<p class="text-muted fs-7 mb-1">Or select an existing conversation:</p>
+				<div class="conv-list" style="max-height: 200px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
 					<div v-for="c in conversations" :key="c.identifier" class="conv-item p-2" @click="doForward(c.identifier)">
 						<div class="fw-bold fs-7">{{ c.name }}</div>
 					</div>
