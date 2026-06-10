@@ -1,0 +1,15 @@
+# Ignore node dependencies
+**/node_modules
+**/dist
+
+# Ignore Go build artifacts and database files
+*.db
+*.exe
+webapi
+/bin
+/pkg
+
+# Ignore Git directory
+.git
+.gitignore
+.editorconfig
