@@ -564,8 +564,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Conversation'
+                $ref: '#/components/schemas/Conversation'
 
   /conversations/{conversationId}:
     parameters:
