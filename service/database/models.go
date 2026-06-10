@@ -39,5 +39,6 @@ type Message struct {
 	Photo          string     `json:"photo"`
 	Status         string     `json:"status"` // "sent", "received", "read"
 	Forwarded      bool       `json:"forwarded"`
+	ReplyTo        string     `json:"replyTo,omitempty"`
 	Reactions      []Reaction `json:"reactions"`
 }

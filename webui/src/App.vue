@@ -33,6 +33,9 @@ function onUpdateUser(updatedUser) {
 		currentUser.value.username = updatedUser.name
 		localStorage.setItem("username", updatedUser.name)
 	}
+	if (updatedUser.photoUrl !== undefined) {
+		currentUser.value.photoUrl = updatedUser.photoUrl
+	}
 }
 </script>
 

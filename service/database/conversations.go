@@ -189,6 +189,7 @@ func (db *appdbimpl) GetConversationMessages(userId string, conversationId strin
 		}
 		m.Photo = photo.String
 		m.Forwarded = forwarded.Bool
+		m.ReplyTo = replyTo.String
 		m.ConversationID = conversationId
 
 		sender, _ := db.GetUserByID(senderId)

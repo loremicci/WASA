@@ -63,27 +63,38 @@ async function fetchConversations() {
 	try {
 		const res = await axios.get('/conversations')
 		conversations.value = res.data || []
+		if (activeConversation.value) {
+			const updated = conversations.value.find(c => c.identifier === activeConversation.value.identifier)
+			if (updated) {
+				activeConversation.value.name = updated.name
+				activeConversation.value.photoUrl = updated.photoUrl
+			}
+		}
 	} catch (e) {
 		console.error("Failed to fetch conversations", e)
 	}
 }
 
-async function searchUsers(query, listRef) {
-	if (!query || query.length < 1) {
-		listRef.value = []
-		return
-	}
+async function fetchUserSearch(query) {
+	if (!query || query.length < 1) return []
 	try {
 		const res = await axios.get(`/users?username=${encodeURIComponent(query)}`)
-		// Exclude self
-		listRef.value = (res.data || []).filter(u => u.identifier !== myUserId.value)
+		return (res.data || []).filter(u => u.identifier !== myUserId.value)
 	} catch (e) {
-		console.error("Search failed", e)
+		return []
 	}
 }
 
 async function doSearch() {
-	await searchUsers(searchQuery.value, searchResults)
+	searchResults.value = await fetchUserSearch(searchQuery.value)
+}
+
+async function doGroupSearch() {
+	groupForm.value.results = await fetchUserSearch(groupForm.value.search)
+}
+
+async function doGroupInfoSearch() {
+	groupInfoForm.value.results = await fetchUserSearch(groupInfoForm.value.search)
 }
 
 async function startDirectChat(user) {
@@ -208,6 +219,11 @@ function hasUserReacted(msg, emoticon) {
 	return msg.reactions.some(r => r.emoticon === emoticon && r.user.identifier === myUserId.value)
 }
 
+function showReactionAuthors(emoticon, reactions) {
+	const authors = reactions.filter(r => r.emoticon === emoticon).map(r => r.user.username).join(', ')
+	alert(`${emoticon} reacted by: ${authors}`)
+}
+
 // Group Mgmt
 async function createGroup() {
 	if (!groupForm.value.name.trim()) return
@@ -219,8 +235,9 @@ async function createGroup() {
 		})
 		showGroupModal.value = false
 		groupForm.value = { name: '', search: '', results: [], selectedUsers: [] }
-		fetchConversations()
-		openConversation(res.data)
+		await fetchConversations()
+		const newConv = conversations.value.find(c => c.identifier === res.data.identifier)
+		openConversation(newConv || { ...res.data, isGroup: true })
 	} catch (e) {
 		alert("Failed to create group")
 	}
@@ -287,13 +304,15 @@ async function saveProfile() {
 		if (profileForm.value.name.trim() && profileForm.value.name.trim() !== props.currentUser.username) {
 			await axios.put('/users/me/name', { name: profileForm.value.name.trim() })
 		}
+		let newPhotoUrl = props.currentUser.photoUrl
 		if (profileForm.value.photo) {
 			const fd = new FormData()
 			fd.append("photo", profileForm.value.photo)
 			await axios.put('/users/me/photo', fd)
+			newPhotoUrl = URL.createObjectURL(profileForm.value.photo)
 		}
 		showProfileModal.value = false
-		emit('updateUser', { name: profileForm.value.name.trim(), photo: profileForm.value.photo })
+		emit('updateUser', { name: profileForm.value.name.trim(), photoUrl: newPhotoUrl })
 		alert("Profile updated!")
 	} catch (e) {
 		if (e.response && e.response.status === 409) {
@@ -323,7 +342,7 @@ function getInitials(name) {
 
 function resolveAvatar(url) {
 	if (!url) return null
-	if (url.startsWith('data:')) return url
+	if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http')) return url
 	return __API_URL__ + url
 }
 
@@ -339,7 +358,8 @@ function getRepliedMessage(replyId) {
 			<!-- Header -->
 			<div class="sidebar-header">
 				<div class="d-flex align-items-center w-100">
-					<div class="avatar sm me-3 shadow-sm">{{ getInitials(currentUser.username) }}</div>
+					<img v-if="currentUser.photoUrl" :src="resolveAvatar(currentUser.photoUrl)" class="avatar sm me-3 shadow-sm" style="width:36px;height:36px;object-fit:cover;" />
+					<div v-else class="avatar sm me-3 shadow-sm">{{ getInitials(currentUser.username) }}</div>
 					<div class="fw-bold flex-grow-1 text-truncate fs-6" style="color: var(--accent-primary);">{{ currentUser.username }}</div>
 					<div class="d-flex gap-2">
 						<button class="glass-btn-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;" @click="showProfileModal = true" title="Profile Settings">
@@ -470,7 +490,7 @@ function getRepliedMessage(replyId) {
 
 							<!-- Reactions -->
 							<div v-if="m.reactions && m.reactions.length > 0" class="reactions-list">
-								<span v-for="r in m.reactions" :key="r.user.identifier + r.emoticon" class="reaction-pill" :title="r.user.username">
+								<span v-for="r in m.reactions" :key="r.user.identifier + r.emoticon" class="reaction-pill cursor-pointer" :title="r.user.username" @click="showReactionAuthors(r.emoticon, m.reactions)">
 									{{ r.emoticon }}
 								</span>
 							</div>
@@ -552,7 +572,7 @@ function getRepliedMessage(replyId) {
 				<input v-model="groupForm.name" type="text" class="form-control glass-input mb-3" placeholder="Group Subject" />
 				
 				<label class="form-label text-muted fs-7">Add Members</label>
-				<input v-model="groupForm.search" @input="() => searchUsers(groupForm.search, groupForm.results)" type="text" class="form-control glass-input mb-2" placeholder="Search users..." />
+				<input v-model="groupForm.search" @input="doGroupSearch" type="text" class="form-control glass-input mb-2" placeholder="Search users..." />
 				
 				<div class="search-results-box mb-3 border border-secondary rounded p-2" style="max-height:150px; overflow-y:auto;" v-if="groupForm.search">
 					<div v-for="u in groupForm.results" :key="u.identifier" class="d-flex align-items-center justify-content-between p-1 border-bottom border-dark">
@@ -592,7 +612,7 @@ function getRepliedMessage(replyId) {
 
 				<hr class="border-secondary"/>
 				<h6 class="mt-3">Add Member</h6>
-				<input v-model="groupInfoForm.search" @input="() => searchUsers(groupInfoForm.search, groupInfoForm.results)" type="text" class="form-control glass-input mb-2" placeholder="Search users to add..." />
+				<input v-model="groupInfoForm.search" @input="doGroupInfoSearch" type="text" class="form-control glass-input mb-2" placeholder="Search users to add..." />
 				<div class="search-results-box mb-3 border border-secondary rounded p-2" style="max-height:150px; overflow-y:auto;" v-if="groupInfoForm.search">
 					<div v-for="u in groupInfoForm.results" :key="u.identifier" class="d-flex align-items-center justify-content-between p-1 border-bottom border-dark">
 						<span>{{ u.username }}</span>
