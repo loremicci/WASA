@@ -77,9 +77,9 @@ async function fetchConversations() {
 }
 
 async function fetchUserSearch(query) {
-	if (!query || query.length < 1) return []
 	try {
-		const res = await axios.get(`/users?username=${encodeURIComponent(query)}`)
+		const url = query && query.length > 0 ? `/users?username=${encodeURIComponent(query)}` : `/users`
+		const res = await axios.get(url)
 		return (res.data || []).filter(u => u.identifier !== myUserId.value)
 	} catch (e) {
 		return []
@@ -195,9 +195,11 @@ async function deleteMsg(id) {
 	}
 }
 
-function openForward(msgId) {
+async function openForward(msgId) {
 	forwardMsgId.value = msgId
 	showForwardModal.value = true
+	forwardForm.value.search = ''
+	forwardForm.value.results = await fetchUserSearch('')
 }
 
 async function doForward(convId) {
@@ -650,9 +652,9 @@ function getRepliedMessage(replyId) {
 				
 				<!-- Search All Users -->
 				<div class="mb-3">
-					<label class="text-muted fs-7">Search for a new user:</label>
+					<label class="text-muted fs-7">Forward to any user:</label>
 					<input v-model="forwardForm.search" @input="doForwardSearch" type="text" class="form-control glass-input mb-2" placeholder="Search users to forward to..." />
-					<div class="search-results-box mb-2 border border-secondary rounded p-2" style="max-height:120px; overflow-y:auto;" v-if="forwardForm.search">
+					<div class="search-results-box mb-2 border border-secondary rounded p-2" style="max-height:120px; overflow-y:auto;">
 						<div v-for="u in forwardForm.results" :key="u.identifier" class="d-flex align-items-center justify-content-between p-1 border-bottom border-dark">
 							<span>{{ u.username }}</span>
 							<button class="btn btn-sm btn-primary py-0 px-2" @click="doForwardToUser(u)">Forward</button>
