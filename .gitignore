@@ -4,6 +4,7 @@
 .idea/
 *.iml
 *.exe
+*.txt
 *.db
 .DS_Store
 .env
