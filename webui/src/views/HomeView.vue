@@ -151,6 +151,15 @@ async function startDirectChat(user) {
 	}
 }
 
+function openGroupInfo() {
+	if (!activeConversation.value || !activeConversation.value.isGroup) return
+	groupInfoForm.value.name = activeConversation.value.name
+	groupInfoForm.value.photo = null
+	groupInfoForm.value.search = ''
+	groupInfoForm.value.results = []
+	showGroupInfoModal.value = true
+}
+
 function openConversation(conv) {
 	activeConversation.value = conv
 	replyTo.value = null
@@ -411,9 +420,14 @@ function getRepliedMessage(replyId) {
 			<!-- Header -->
 			<div class="sidebar-header border-0 pb-0 pt-4 px-4">
 				<h2 class="fw-bold fs-3 mb-4" style="background: linear-gradient(135deg, #4f46e5, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">WASAText</h2>
-				<button class="btn btn-primary w-100 rounded-4 py-3 fw-bold d-flex justify-content-center align-items-center text-white shadow-sm" style="background: linear-gradient(135deg, #4f46e5, #ec4899); border: none; font-size: 1rem;" @click="showNewChatModal = true; searchQuery = ''; searchResults = [];">
-					<svg class="feather me-2"><use href="/feather-sprite-v4.29.0.svg#edit-3"/></svg> New Chat
-				</button>
+				<div class="d-flex gap-2">
+					<button class="btn btn-primary flex-grow-1 rounded-4 py-3 fw-bold d-flex justify-content-center align-items-center text-white shadow-sm" style="background: linear-gradient(135deg, #4f46e5, #ec4899); border: none; font-size: 1rem;" @click="showNewChatModal = true; searchQuery = ''; searchResults = [];">
+						<svg class="feather me-2"><use href="/feather-sprite-v4.29.0.svg#edit-3"/></svg> New Chat
+					</button>
+					<button class="btn rounded-4 d-flex justify-content-center align-items-center shadow-sm" style="background: var(--bg-panel-hover); border: 1px solid var(--border-light); width: 54px; flex-shrink: 0; color: var(--text-primary);" @click="showGroupModal = true; groupForm = { name: '', search: '', results: [], selectedUsers: [] }" title="New Group">
+						<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#users"/></svg>
+					</button>
+				</div>
 			</div>
 			
 			<!-- Search -->
@@ -520,7 +534,15 @@ function getRepliedMessage(replyId) {
 								<span :style="{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', marginRight: '4px', background: activeConversation.isOnline ? '#10b981' : '#ef4444' }"></span>
 								{{ activeConversation.isOnline ? 'Online' : 'Offline' }}
 							</div>
+							<div v-else class="text-muted fs-7 d-flex align-items-center">
+								<svg class="feather me-1" style="width: 14px; height: 14px;"><use href="/feather-sprite-v4.29.0.svg#users"/></svg> Group chat
+							</div>
 						</div>
+					</div>
+					<div class="d-flex align-items-center">
+						<button v-if="activeConversation.isGroup" class="btn btn-sm text-muted p-2" @click="openGroupInfo" title="Group Info">
+							<svg class="feather" style="width: 20px; height: 20px;"><use href="/feather-sprite-v4.29.0.svg#info"/></svg>
+						</button>
 					</div>
 				</div>
 
