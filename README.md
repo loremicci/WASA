@@ -63,6 +63,9 @@ docker run --rm --user 1000 -p 3000:3000 wasa-backend
 # Build e avvio del Frontend
 docker build -t wasa-frontend -f Dockerfile.frontend .
 docker run --rm -p 8080:80 wasa-frontend
+
+# Pagina Web
+http://localhost:8080/
 ```
 
 ## 📚 API Endpoints (Panoramica)
