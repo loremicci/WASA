@@ -11,22 +11,21 @@ COPY vendor/ vendor/
 COPY cmd/ cmd/
 COPY service/ service/
 
-# Build the binary statically
+# Compile the source code to create a static executable named webapi, cgo = 0 to make sure it doesn't depend from other C libraries outside the OS
 RUN CGO_ENABLED=0 go build -o webapi ./cmd/webapi
 
 # Create a lightweight runtime image
 FROM alpine:latest
 WORKDIR /app
 
-# Copy the built executable from the builder stage
+# Copy the built executable "webapi" from the builder stage
 COPY --from=builder /app/webapi .
 
-# Change ownership of the app directory to UID 1000 so the app can create the database and uploads directory
+# Change ownership of the app directory to UID 1000 so that the app and not-root users can create the database and uploads directory
 RUN chown -R 1000:1000 /app
 
 # Expose the default backend port
 EXPOSE 3000
 
-# Run the executable
-# (It will default to creating the database at /tmp/decaf.db, which is valid in an Alpine container)
+# Run the executable webapi
 CMD ["./webapi"]

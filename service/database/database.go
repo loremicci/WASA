@@ -12,6 +12,7 @@ type AppDatabase interface {
 
 	// User operations
 	DoLogin(username string) (string, error)
+	DoLogout(userId string) error
 	SearchUsers(query string) ([]User, error)
 	GetUserByID(userId string) (User, error)
 	SetMyUserName(userId string, newName string) error

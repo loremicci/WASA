@@ -8,6 +8,7 @@ import (
 func (rt *_router) Handler() http.Handler {
 	// Login
 	rt.router.POST("/session", rt.wrap(rt.doLogin))
+	rt.router.DELETE("/session", rt.AuthMiddleware(rt.wrap(rt.doLogout)))
 
 	// Users
 	rt.router.GET("/users", rt.AuthMiddleware(rt.wrap(rt.searchUsers)))

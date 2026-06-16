@@ -60,7 +60,7 @@ async function login() {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
+	background: #0f172a;
 	position: relative;
 	overflow: hidden;
 }
@@ -68,27 +68,43 @@ async function login() {
 .login-container::before {
 	content: '';
 	position: absolute;
-	width: 400px;
-	height: 400px;
+	width: 600px;
+	height: 600px;
 	background: #4f46e5;
-	filter: blur(100px);
+	filter: blur(150px);
 	border-radius: 50%;
-	top: -100px;
+	top: -200px;
 	left: -100px;
-	opacity: 0.15;
+	opacity: 0.35;
+	animation: orbFloat1 18s ease-in-out infinite;
 }
 
 .login-container::after {
 	content: '';
 	position: absolute;
-	width: 300px;
-	height: 300px;
+	width: 500px;
+	height: 500px;
 	background: #ec4899;
-	filter: blur(100px);
+	filter: blur(150px);
 	border-radius: 50%;
-	bottom: -50px;
-	right: -50px;
-	opacity: 0.12;
+	bottom: -150px;
+	right: -100px;
+	opacity: 0.35;
+	animation: orbFloat2 15s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+	0% { transform: translate(0, 0) scale(1); }
+	33% { transform: translate(25vw, 15vh) scale(1.2); }
+	66% { transform: translate(-10vw, 30vh) scale(0.8); }
+	100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes orbFloat2 {
+	0% { transform: translate(0, 0) scale(1); }
+	33% { transform: translate(-20vw, -25vh) scale(1.3); }
+	66% { transform: translate(15vw, -10vh) scale(0.9); }
+	100% { transform: translate(0, 0) scale(1); }
 }
 
 .login-card {
@@ -97,7 +113,7 @@ async function login() {
 	padding: 3rem 2.5rem;
 	text-align: center;
 	z-index: 10;
-	animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+	animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .brand-title {

@@ -47,5 +47,8 @@ func createSchema(db *sql.DB) error {
 		}
 	}
 
+	// Add is_online column safely for existing DBs
+	_, _ = db.Exec("ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT 0")
+
 	return nil
 }

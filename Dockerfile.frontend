@@ -1,3 +1,4 @@
+# Use a base image containing node.js and yarn
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -9,16 +10,16 @@ COPY webui/.yarn/releases/ .yarn/releases/
 # Install dependencies
 RUN corepack enable && yarn install
 
-# Copy frontend source code and build
+# Copy frontend source code and build, takes the react,vue... code and creates stacic html,css,js files
 COPY webui/ ./
 RUN yarn run build-prod
 
-# Use Nginx to serve the static production build
+# Use a clean image containing Nginx (lightweight and fast server) to serve the static production build
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx
+# Start Nginx in foreground (daemon off)
 CMD ["nginx", "-g", "daemon off;"]

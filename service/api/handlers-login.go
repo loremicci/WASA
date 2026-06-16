@@ -38,3 +38,13 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(LoginResponse{Identifier: id})
 }
+
+func (rt *_router) doLogout(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+	err := rt.db.DoLogout(GetUserIDFromContext(r))
+	if err != nil {
+		ctx.Logger.WithError(err).Error("logout failed")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

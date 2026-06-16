@@ -2,18 +2,34 @@
 
 :root {
 	/* Premium Light Theme */
-	--bg-dark: #f8fafc;
-	--bg-panel: rgba(255, 255, 255, 0.85);
-	--bg-panel-hover: rgba(241, 245, 249, 0.95);
-	--accent-primary: #4f46e5;
-	--accent-secondary: #ec4899;
+	--bg-dark: #ffffff;
+	--bg-panel: #ffffff;
+	--bg-panel-hover: #f8fafc;
+	--accent-primary: #7c3aed;
+	--accent-secondary: #d946ef;
+	--accent-light: #e9d5ff;
 	--text-primary: #0f172a;
-	--text-secondary: #475569;
+	--text-secondary: #64748b;
 	--border-light: rgba(0, 0, 0, 0.08);
+	--border-focus: rgba(124, 58, 237, 0.3);
 	--danger: #ef4444;
 	--success: #10b981;
-	--btn-sec-bg: rgba(0, 0, 0, 0.05);
-	--btn-sec-border: rgba(0, 0, 0, 0.12);
+	--btn-sec-bg: rgba(0, 0, 0, 0.03);
+	--btn-sec-border: rgba(0, 0, 0, 0.08);
+}
+
+body.dark-theme {
+	--bg-dark: #0e1621;
+	--bg-panel: #17212b;
+	--bg-panel-hover: #202b36;
+	--accent-primary: #8b5cf6;
+	--accent-secondary: #d946ef;
+	--accent-light: #2b5278; /* Telegram style sent message */
+	--text-primary: #f5f5f5;
+	--text-secondary: #7f91a4;
+	--border-light: transparent; /* Telegram style: no borders */
+	--btn-sec-bg: #202b36;
+	--btn-sec-border: transparent;
 }
 
 body {
@@ -184,7 +200,50 @@ h1, h2, h3, h4, h5, h6 {
 	to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideUpFade {
+	from { opacity: 0; transform: translateY(15px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+	0% { opacity: 0; transform: scale(0.8); }
+	70% { transform: scale(1.1); }
+	100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float {
+	0% { transform: translateY(0px) rotate(0deg); }
+	50% { transform: translateY(-15px) rotate(3deg); }
+	100% { transform: translateY(0px) rotate(0deg); }
+}
+
 /* Utility to hide Bootstrap overrides */
 .form-control:focus {
 	box-shadow: none;
+}
+
+/* Feather SVG Icons fix */
+.feather {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* Online Status Dot */
+.status-dot {
+	position: absolute;
+	bottom: 0px;
+	right: 0px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 2px solid white;
+}
+.status-dot.online {
+	background-color: #10b981;
+}
+.status-dot.offline {
+	background-color: #9ca3af;
 }

@@ -29,8 +29,16 @@ const errorMsg = ref('')
 // Modals
 const showProfileModal = ref(false)
 const showGroupModal = ref(false)
+const showNewChatModal = ref(false)
 const showGroupInfoModal = ref(false)
 const showForwardModal = ref(false)
+
+const convSearchQuery = ref('')
+const filteredConversations = computed(() => {
+	if (!convSearchQuery.value) return conversations.value
+	const q = convSearchQuery.value.toLowerCase()
+	return conversations.value.filter(c => c.name.toLowerCase().includes(q))
+})
 
 // Forms
 const profileForm = ref({ name: props.currentUser.username, photo: null })
@@ -42,7 +50,23 @@ const forwardMsgId = ref(null)
 // Polling interval
 let pollInterval = null
 
+const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
+
+function toggleTheme() {
+	isDarkMode.value = !isDarkMode.value
+	if (isDarkMode.value) {
+		document.body.classList.add('dark-theme')
+		localStorage.setItem('theme', 'dark')
+	} else {
+		document.body.classList.remove('dark-theme')
+		localStorage.setItem('theme', 'light')
+	}
+}
+
 onMounted(() => {
+	if (isDarkMode.value) {
+		document.body.classList.add('dark-theme')
+	}
 	fetchConversations()
 	// Poll every 3 seconds for updates
 	pollInterval = setInterval(() => {
@@ -69,6 +93,7 @@ async function fetchConversations() {
 			if (updated) {
 				activeConversation.value.name = updated.name
 				activeConversation.value.photoUrl = updated.photoUrl
+				activeConversation.value.isOnline = updated.isOnline
 			}
 		}
 	} catch (e) {
@@ -372,55 +397,48 @@ function getRepliedMessage(replyId) {
 
 <template>
 	<div class="app-layout">
-		<!-- Sidebar -->
+		<!-- Icon Sidebar (Far Left) -->
+		<div class="icon-sidebar d-flex flex-column align-items-center py-3">
+			<div class="top-icons d-flex flex-column gap-3 w-100 align-items-center">
+				<button class="icon-btn active" title="Chats" style="margin-top: 10px;">
+					<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#message-square"/></svg>
+				</button>
+			</div>
+		</div>
+
+		<!-- Conversations Sidebar -->
 		<div class="sidebar">
 			<!-- Header -->
-			<div class="sidebar-header">
-				<div class="d-flex align-items-center w-100">
-					<img v-if="currentUser.photoUrl" :src="resolveAvatar(currentUser.photoUrl)" class="avatar sm me-3 shadow-sm" style="width:36px;height:36px;object-fit:cover;" />
-					<div v-else class="avatar sm me-3 shadow-sm">{{ getInitials(currentUser.username) }}</div>
-					<div class="fw-bold flex-grow-1 text-truncate fs-6" style="color: var(--accent-primary);">{{ currentUser.username }}</div>
-					<div class="d-flex gap-2">
-						<button class="glass-btn-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;" @click="showProfileModal = true" title="Profile Settings">
-							<svg class="feather" style="color: var(--accent-primary); width: 16px; height: 16px;"><use href="/feather-sprite-v4.29.0.svg#settings"/></svg>
-						</button>
-						<button class="glass-btn-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;" @click="emit('logout')" title="Log Out">
-							<svg class="feather" style="color: var(--danger); width: 16px; height: 16px;"><use href="/feather-sprite-v4.29.0.svg#log-out"/></svg>
-						</button>
-					</div>
-				</div>
+			<div class="sidebar-header border-0 pb-0 pt-4 px-4">
+				<h2 class="fw-bold fs-3 mb-4" style="background: linear-gradient(135deg, #4f46e5, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">WASAText</h2>
+				<button class="btn btn-primary w-100 rounded-4 py-3 fw-bold d-flex justify-content-center align-items-center text-white shadow-sm" style="background: linear-gradient(135deg, #4f46e5, #ec4899); border: none; font-size: 1rem;" @click="showNewChatModal = true; searchQuery = ''; searchResults = [];">
+					<svg class="feather me-2"><use href="/feather-sprite-v4.29.0.svg#edit-3"/></svg> New Chat
+				</button>
 			</div>
 			
-			<!-- Search & Create Group -->
-			<div class="p-3 border-bottom" style="border-color: var(--border-light) !important;">
+			<!-- Search -->
+			<div class="p-4 pb-2 border-0">
 				<div class="position-relative">
-					<input v-model="searchQuery" @input="doSearch" type="text" class="form-control glass-input w-100" placeholder="Search users..." />
-					<div v-if="searchQuery && searchResults.length > 0" class="search-dropdown">
-						<div v-for="u in searchResults" :key="u.identifier" class="search-item" @click="startDirectChat(u)">
-							<img v-if="u.photoUrl" :src="resolveAvatar(u.photoUrl)" class="avatar sm me-2" />
-							<div v-else class="avatar sm me-2">{{ getInitials(u.username) }}</div>
-							<span>{{ u.username }}</span>
-						</div>
-					</div>
-					<div v-else-if="searchQuery" class="search-dropdown text-muted p-2 text-center fs-7">
-						No users found.
-					</div>
+					<svg class="feather position-absolute" style="left: 14px; top: 12px; color: var(--text-secondary); width: 16px; height: 16px;"><use href="/feather-sprite-v4.29.0.svg#search"/></svg>
+					<input v-model="convSearchQuery" type="text" class="form-control border-0 rounded-4 w-100" style="background: var(--bg-panel-hover); padding-left: 40px; padding-top: 10px; padding-bottom: 10px; color: var(--text-primary);" placeholder="Search conversations..." />
 				</div>
-				<button class="glass-btn-secondary w-100 mt-2 py-1 fs-7 rounded-3" @click="showGroupModal = true">
-					<svg class="feather me-1"><use href="/feather-sprite-v4.29.0.svg#users"/></svg> New Group
-				</button>
 			</div>
 			
 			<!-- Conversations List -->
 			<div class="conv-list">
-				<div v-if="conversations.length === 0" class="text-center text-muted p-4 mt-4 fs-7">
-					No conversations yet.<br/>Search for a user to start chatting!
+				<div v-if="filteredConversations.length === 0" class="text-center text-muted p-4 mt-4 fs-7">
+					No conversations found.
 				</div>
-				<div v-for="c in conversations" :key="c.identifier" 
+				<div v-for="c in filteredConversations" :key="c.identifier" 
 					class="conv-item" :class="{ 'active': activeConversation?.identifier === c.identifier }"
 					@click="openConversation(c)">
-					<img v-if="c.photoUrl" :src="resolveAvatar(c.photoUrl)" class="avatar me-3" />
-					<div v-else class="avatar me-3">{{ getInitials(c.name) }}</div>
+					
+					<div class="avatar-container position-relative me-3">
+						<img v-if="c.photoUrl" :src="resolveAvatar(c.photoUrl)" class="avatar" />
+						<div v-else class="avatar">{{ getInitials(c.name) }}</div>
+						<span v-if="!c.isGroup && c.isOnline" class="status-dot online"></span>
+						<span v-if="!c.isGroup && !c.isOnline" class="status-dot offline"></span>
+					</div>
 					
 					<div class="conv-info">
 						<div class="d-flex justify-content-between align-items-baseline mb-1">
@@ -434,14 +452,60 @@ function getRepliedMessage(replyId) {
 					</div>
 				</div>
 			</div>
+			
+			<!-- User Profile Footer -->
+			<div class="user-profile-footer mt-auto p-3 d-flex align-items-center justify-content-between" style="background: var(--bg-panel); min-height: 85px;">
+				<div class="d-flex align-items-center">
+					<img v-if="currentUser.photoUrl" :src="resolveAvatar(currentUser.photoUrl)" class="avatar sm shadow-sm me-2" style="width:40px;height:40px;object-fit:cover;" />
+					<div v-else class="avatar sm shadow-sm me-2" style="width:40px;height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #4f46e5, #ec4899); color: white;">{{ getInitials(currentUser.username) }}</div>
+					<div>
+						<div class="fw-bold">{{ currentUser.username }}</div>
+						<div class="text-success fs-8 d-flex align-items-center">
+							<span style="display:inline-block; width:6px; height:6px; background:#10b981; border-radius:50%; margin-right:4px;"></span> Online
+						</div>
+					</div>
+				</div>
+				<div class="d-flex align-items-center">
+					<button class="btn btn-sm text-muted p-2" @click="toggleTheme" title="Toggle Theme">
+						<svg class="feather">
+							<use v-if="isDarkMode" href="/feather-sprite-v4.29.0.svg#sun"/>
+							<use v-else href="/feather-sprite-v4.29.0.svg#moon"/>
+						</svg>
+					</button>
+					<button class="btn btn-sm text-muted p-2" @click="showProfileModal = true" title="Settings"><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#settings"/></svg></button>
+				</div>
+			</div>
 		</div>
 
 		<!-- Main Chat Pane -->
 		<div class="chat-pane">
 			<div v-if="!activeConversation" class="empty-state">
-				<div class="empty-icon"><svg class="feather" style="width:64px;height:64px;"><use href="/feather-sprite-v4.29.0.svg#message-circle"/></svg></div>
-				<h2 class="mt-4 fw-bold">WASAText</h2>
-				<p class="text-muted">Select a conversation to start chatting.</p>
+				<div class="empty-icon-graphic mb-2">
+					<svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M40 30 L43 38 L51 41 L43 44 L40 52 L37 44 L29 41 L37 38 Z" fill="#c4b5fd" opacity="0.6"/>
+						<path d="M140 70 L142 75 L147 77 L142 79 L140 84 L138 79 L133 77 L138 75 Z" fill="#c4b5fd" opacity="0.6"/>
+						<path d="M85 10 L87 15 L92 17 L87 19 L85 24 L83 19 L78 17 L83 15 Z" fill="#c4b5fd" opacity="0.8"/>
+						<path d="M125 35 L126.5 38.5 L130 40 L126.5 41.5 L125 45 L123.5 41.5 L120 40 L123.5 38.5 Z" fill="#c4b5fd" opacity="0.6"/>
+						<g filter="url(#shadow-bubble)">
+							<path d="M70 50 H120 C128.3 50 135 56.7 135 65 V95 C135 103.3 128.3 110 120 110 V120 L105 110 H70 C61.7 110 55 103.3 55 95 V65 C55 56.7 61.7 50 70 50 Z" fill="white"/>
+						</g>
+						<path d="M45 40 H95 C103.3 40 110 46.7 110 55 V85 C110 93.3 103.3 100 95 100 H70 L55 110 V100 C46.7 100 40 93.3 40 85 V55 C40 46.7 46.7 40 45 40 Z" fill="url(#grad-bubble)"/>
+						<circle cx="65" cy="70" r="4" fill="white"/>
+						<circle cx="77.5" cy="70" r="4" fill="white"/>
+						<circle cx="90" cy="70" r="4" fill="white"/>
+						<defs>
+							<linearGradient id="grad-bubble" x1="40" y1="40" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+								<stop stop-color="#4f46e5" />
+								<stop offset="1" stop-color="#ec4899" />
+							</linearGradient>
+							<filter id="shadow-bubble" x="40" y="40" width="120" height="100" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+								<feDropShadow dx="0" dy="5" stdDeviation="10" flood-opacity="0.1" />
+							</filter>
+						</defs>
+					</svg>
+				</div>
+				<h2 class="mt-2 fw-bold" style="color: var(--text-primary);">Start chatting!</h2>
+				<p class="text-muted text-center" style="max-width: 300px;">Select a conversation from the sidebar to begin.</p>
 			</div>
 			
 			<div v-else class="chat-container">
@@ -452,19 +516,48 @@ function getRepliedMessage(replyId) {
 						<div v-else class="avatar me-3">{{ getInitials(activeConversation.name) }}</div>
 						<div>
 							<div class="fw-bold fs-5">{{ activeConversation.name }}</div>
-							<div class="text-muted fs-7">{{ activeConversation.isGroup ? 'Group Chat' : 'Direct Chat' }}</div>
+							<div v-if="!activeConversation.isGroup" :class="activeConversation.isOnline ? 'text-success' : 'text-danger'" class="fs-7 d-flex align-items-center">
+								<span :style="{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', marginRight: '4px', background: activeConversation.isOnline ? '#10b981' : '#ef4444' }"></span>
+								{{ activeConversation.isOnline ? 'Online' : 'Offline' }}
+							</div>
 						</div>
-					</div>
-					<div v-if="activeConversation.isGroup">
-						<button class="glass-btn-secondary p-2 rounded-circle" @click="showGroupInfoModal = true" title="Group Info">
-							<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#info"/></svg>
-						</button>
 					</div>
 				</div>
 
 				<!-- Messages Area -->
 				<div class="messages-area">
 					<LoadingSpinner :loading="loadingMessages" class="mt-3" />
+					
+					<div v-if="!loadingMessages && messages.length === 0" class="d-flex flex-column align-items-center justify-content-center h-100" style="opacity: 0.9;">
+						<div class="empty-icon-graphic mb-1" style="transform: scale(0.85);">
+							<svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M40 30 L43 38 L51 41 L43 44 L40 52 L37 44 L29 41 L37 38 Z" fill="#c4b5fd" opacity="0.6"/>
+								<path d="M140 70 L142 75 L147 77 L142 79 L140 84 L138 79 L133 77 L138 75 Z" fill="#c4b5fd" opacity="0.6"/>
+								<path d="M85 10 L87 15 L92 17 L87 19 L85 24 L83 19 L78 17 L83 15 Z" fill="#c4b5fd" opacity="0.8"/>
+								<path d="M125 35 L126.5 38.5 L130 40 L126.5 41.5 L125 45 L123.5 41.5 L120 40 L123.5 38.5 Z" fill="#c4b5fd" opacity="0.6"/>
+								<g filter="url(#shadow-bubble-inner)">
+									<path d="M70 50 H120 C128.3 50 135 56.7 135 65 V95 C135 103.3 128.3 110 120 110 V120 L105 110 H70 C61.7 110 55 103.3 55 95 V65 C55 56.7 61.7 50 70 50 Z" fill="white"/>
+								</g>
+								<path d="M45 40 H95 C103.3 40 110 46.7 110 55 V85 C110 93.3 103.3 100 95 100 H70 L55 110 V100 C46.7 100 40 93.3 40 85 V55 C40 46.7 46.7 40 45 40 Z" fill="url(#grad-bubble-inner)"/>
+								<circle cx="65" cy="70" r="4" fill="white"/>
+								<circle cx="77.5" cy="70" r="4" fill="white"/>
+								<circle cx="90" cy="70" r="4" fill="white"/>
+								<defs>
+									<linearGradient id="grad-bubble-inner" x1="40" y1="40" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+										<stop stop-color="#4f46e5" />
+										<stop offset="1" stop-color="#ec4899" />
+									</linearGradient>
+									<filter id="shadow-bubble-inner" x="40" y="40" width="120" height="100" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+										<feDropShadow dx="0" dy="5" stdDeviation="10" flood-opacity="0.1" />
+									</filter>
+								</defs>
+							</svg>
+						</div>
+						<h3 class="fw-bold fs-4" style="color: var(--text-primary);">Start the conversation!</h3>
+						<p class="text-muted text-center mx-auto" style="max-width: 300px; font-size: 0.95rem;">
+							Send a message to {{ activeConversation.name }} to start chatting.
+						</p>
+					</div>
 					
 					<div v-for="m in messages.slice().reverse()" :key="m.identifier" class="message-wrapper" :class="{ 'mine': m.sender.identifier === myUserId }">
 						
@@ -550,13 +643,13 @@ function getRepliedMessage(replyId) {
 					</div>
 
 					<div class="d-flex align-items-center">
-						<label class="btn glass-btn-secondary rounded-circle p-2 me-2 mb-0 cursor-pointer" title="Attach Photo">
+						<label class="btn glass-btn-secondary rounded-circle p-2 me-2 mb-0 cursor-pointer d-flex align-items-center justify-content-center" title="Attach Photo" style="width:42px; height:42px; flex-shrink: 0;">
 							<input type="file" id="photo-upload" class="d-none" accept="image/*" @change="handlePhotoSelect" />
-							<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#paperclip"/></svg>
+							<svg class="feather" style="margin:0; flex-shrink: 0;"><use href="/feather-sprite-v4.29.0.svg#paperclip"/></svg>
 						</label>
-						<input v-model="messageText" @keyup.enter="sendMessage" type="text" class="form-control glass-input flex-grow-1" placeholder="Type a message..." />
-						<button class="glass-btn ms-2 rounded-circle p-2" style="width:42px; height:42px;" @click="sendMessage" :disabled="!messageText.trim() && !messagePhoto">
-							<svg class="feather" style="margin:0;"><use href="/feather-sprite-v4.29.0.svg#send"/></svg>
+						<input v-model="messageText" @keyup.enter="sendMessage" type="text" class="form-control border-0 rounded-pill flex-grow-1" style="background: #f1f5f9; padding: 12px 20px;" placeholder="Type a message..." />
+						<button class="btn btn-primary ms-3 rounded-circle d-flex align-items-center justify-content-center text-white" style="width:48px; height:48px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); border: none; flex-shrink:0;" @click="sendMessage" :disabled="!messageText.trim() && !messagePhoto">
+							<svg class="feather" style="margin:0; width: 20px; height: 20px;"><use href="/feather-sprite-v4.29.0.svg#send"/></svg>
 						</button>
 					</div>
 				</div>
@@ -568,7 +661,7 @@ function getRepliedMessage(replyId) {
 		<!-- Profile Modal -->
 		<div v-if="showProfileModal" class="modal-overlay" @click.self="showProfileModal = false">
 			<div class="modal-content-glass">
-				<h4 class="mb-4">Edit Profile</h4>
+				<h4 class="mb-4">Profile & Settings</h4>
 				<div class="mb-3">
 					<label class="form-label text-muted fs-7">Username</label>
 					<input v-model="profileForm.name" type="text" class="form-control glass-input" />
@@ -577,9 +670,36 @@ function getRepliedMessage(replyId) {
 					<label class="form-label text-muted fs-7">Profile Photo</label>
 					<input type="file" class="form-control glass-input" accept="image/*" @change="e => profileForm.photo = e.target.files[0]" />
 				</div>
-				<div class="d-flex justify-content-end gap-2">
-					<button class="glass-btn-secondary" @click="showProfileModal = false">Cancel</button>
-					<button class="glass-btn" @click="saveProfile">Save</button>
+				<div class="d-flex justify-content-between align-items-center mt-4">
+					<button class="btn btn-outline-danger" @click="emit('logout')">Log Out</button>
+					<div class="d-flex gap-2">
+						<button class="glass-btn-secondary" @click="showProfileModal = false">Cancel</button>
+						<button class="glass-btn" @click="saveProfile">Save</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- New Chat Modal -->
+		<div v-if="showNewChatModal" class="modal-overlay" @click.self="showNewChatModal = false">
+			<div class="modal-content-glass" style="max-width: 500px;">
+				<div class="d-flex justify-content-between align-items-center mb-4">
+					<h4 class="mb-0">Start New Chat</h4>
+					<button class="btn btn-sm text-muted" @click="showNewChatModal = false"><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x"/></svg></button>
+				</div>
+				<div class="position-relative mb-3">
+					<svg class="feather position-absolute" style="left: 14px; top: 12px; color: var(--text-secondary); width: 16px; height: 16px;"><use href="/feather-sprite-v4.29.0.svg#search"/></svg>
+					<input v-model="searchQuery" @input="doSearch" type="text" class="form-control glass-input w-100" style="padding-left: 40px;" placeholder="Search users by name..." />
+				</div>
+				<div class="search-results-box" style="max-height:250px; overflow-y:auto;" v-if="searchQuery">
+					<div v-if="searchResults.length === 0" class="text-center text-muted p-3">No users found.</div>
+					<div v-for="u in searchResults" :key="u.identifier" class="d-flex align-items-center justify-content-between p-2 border-bottom cursor-pointer" @click="startDirectChat(u); showNewChatModal = false;">
+						<div class="d-flex align-items-center">
+							<img v-if="u.photoUrl" :src="resolveAvatar(u.photoUrl)" class="avatar sm me-3" />
+							<div v-else class="avatar sm me-3">{{ getInitials(u.username) }}</div>
+							<span class="fw-bold">{{ u.username }}</span>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -680,22 +800,45 @@ function getRepliedMessage(replyId) {
 	display: flex;
 	height: 100vh;
 	width: 100vw;
-	background-color: #f8fafc;
-	background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
-	background-size: 20px 20px;
+	background: var(--bg-dark);
+}
+
+.icon-sidebar {
+	width: 72px;
+	min-width: 72px;
+	height: 100%;
+	background: var(--bg-panel);
+	z-index: 15;
+}
+
+.icon-btn {
+	background: transparent;
+	border: none;
+	width: 48px;
+	height: 48px;
+	border-radius: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-secondary);
+	transition: all 0.2s;
+}
+.icon-btn:hover { background: #f8fafc; color: var(--accent-primary); }
+.icon-btn.active {
+	background: #f3e8ff;
+	color: var(--accent-primary);
 }
 
 .sidebar {
 	position: static !important;
-	width: 320px !important;
-	min-width: 320px !important;
-	max-width: 320px !important;
-	height: 100vh !important;
+	width: 350px !important;
+	min-width: 350px !important;
+	max-width: 350px !important;
+	height: 100% !important;
 	border-right: 1px solid var(--border-light) !important;
 	background: var(--bg-panel) !important;
 	display: flex !important;
 	flex-direction: column !important;
-	backdrop-filter: blur(20px);
 	z-index: 10;
 	padding: 0 !important;
 	box-shadow: none !important;
@@ -703,7 +846,7 @@ function getRepliedMessage(replyId) {
 
 .sidebar-header {
 	padding: 1rem;
-	background: rgba(255,255,255,0.02);
+	background: transparent;
 	border-bottom: 1px solid var(--border-light);
 }
 
@@ -747,11 +890,21 @@ function getRepliedMessage(replyId) {
 	align-items: center;
 	padding: 0.85rem 1rem;
 	cursor: pointer;
-	transition: background 0.2s;
-	border-bottom: 1px solid rgba(255,255,255,0.02);
+	transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+	border-bottom: 1px solid rgba(0,0,0,0.02);
+	margin: 0 8px;
+	border-radius: 12px;
 }
-.conv-item:hover { background: rgba(255,255,255,0.03); }
-.conv-item.active { background: rgba(79, 70, 229, 0.15); border-left: 3px solid var(--accent-primary); }
+.conv-item:hover { 
+	background: rgba(0,0,0,0.02); 
+	transform: translateY(-2px) scale(1.01);
+	box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+.conv-item.active { 
+	background: rgba(79, 70, 229, 0.1); 
+	border-left: 3px solid var(--accent-primary); 
+	border-bottom: none;
+}
 
 .conv-info { flex-grow: 1; overflow: hidden; }
 
@@ -760,7 +913,7 @@ function getRepliedMessage(replyId) {
 	display: flex;
 	flex-direction: column;
 	position: relative;
-	background: rgba(0,0,0,0.2);
+	background: var(--bg-dark);
 }
 
 .empty-state {
@@ -787,7 +940,7 @@ function getRepliedMessage(replyId) {
 .chat-header {
 	padding: 1rem 1.5rem;
 	border-bottom: 1px solid var(--border-light);
-	background: rgba(255,255,255,0.02);
+	background: var(--bg-panel);
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -808,6 +961,7 @@ function getRepliedMessage(replyId) {
 	align-items: flex-start;
 	position: relative;
 	max-width: 75%;
+	animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .message-wrapper.mine {
 	align-self: flex-end;
@@ -820,21 +974,21 @@ function getRepliedMessage(replyId) {
 }
 
 .message-bubble {
-	padding: 0.6rem 1rem;
-	border-radius: 18px;
-	background: var(--bg-panel);
-	border: 1px solid var(--border-light);
+	padding: 0.8rem 1.2rem;
+	border-radius: 20px;
+	background: var(--bg-panel-hover);
+	border: none;
 	color: var(--text-primary);
 	border-bottom-left-radius: 4px;
 	position: relative;
-	box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+	box-shadow: none;
 }
 .message-bubble.mine {
-	background: linear-gradient(135deg, var(--accent-primary), #6366f1);
+	background: var(--accent-light);
 	border: none;
 	border-bottom-right-radius: 4px;
-	border-bottom-left-radius: 18px;
-	color: white !important;
+	border-bottom-left-radius: 20px;
+	color: var(--text-primary) !important;
 }
 
 .reply-context {
@@ -876,7 +1030,10 @@ function getRepliedMessage(replyId) {
 	margin-top: 4px;
 }
 .message-bubble.mine .message-meta {
-	color: rgba(255, 255, 255, 0.75);
+	color: var(--text-secondary);
+}
+.message-bubble.mine .status-check {
+	color: var(--accent-primary);
 }
 .status-check .feather {
 	width: 12px; height: 12px;
@@ -896,13 +1053,19 @@ function getRepliedMessage(replyId) {
 	left: 10px;
 }
 .reaction-pill {
-	background: var(--btn-sec-bg);
+	background: var(--bg-panel);
 	border: 1px solid var(--border-light);
-	border-radius: 10px;
-	padding: 2px 6px;
-	font-size: 0.75rem;
+	border-radius: 12px;
+	padding: 2px 8px;
+	font-size: 0.8rem;
 	cursor: pointer;
 	color: var(--text-primary);
+	box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+	animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	transition: transform 0.2s;
+}
+.reaction-pill:hover {
+	transform: scale(1.1);
 }
 
 /* Actions Menu */
@@ -952,11 +1115,11 @@ function getRepliedMessage(replyId) {
 	box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
 }
 .message-actions button.text-danger {
-	color: var(--danger);
+	color: var(--danger) !important;
 }
 .message-actions button.text-danger:hover {
 	background: var(--danger);
-	color: white;
+	color: white !important;
 	border-color: var(--danger);
 	box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
 }
@@ -996,8 +1159,12 @@ function getRepliedMessage(replyId) {
 /* Input Area */
 .chat-input-area {
 	padding: 1rem 1.5rem;
-	background: rgba(255,255,255,0.02);
+	background: var(--bg-panel);
 	border-top: 1px solid var(--border-light);
+	min-height: 85px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 }
 
 .reply-preview {

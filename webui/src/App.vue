@@ -21,7 +21,12 @@ function onLoginSuccess(user) {
 	isAuthenticated.value = true
 }
 
-function onLogout() {
+async function onLogout() {
+	try {
+		await axios.delete('/session')
+	} catch (e) {
+		console.warn("Server non ha risposto al logout", e)
+	}
 	localStorage.removeItem("token")
 	localStorage.removeItem("username")
 	currentUser.value = null
@@ -47,11 +52,12 @@ function onUpdateUser(updatedUser) {
 <style>
 /* Global glassmorphism classes */
 .glass-card {
-	background: rgba(255, 255, 255, 0.8) !important;
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border: 1px solid rgba(0, 0, 0, 0.08) !important;
-	border-radius: 16px;
-	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05) !important;
+	background: rgba(255, 255, 255, 0.85) !important;
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.5) !important;
+	border-radius: 20px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+	transition: all 0.3s ease;
 }
 </style>

@@ -6,6 +6,7 @@ type User struct {
 	ID       string `json:"identifier"`
 	Name     string `json:"username"`
 	PhotoURL string `json:"photoUrl"`
+	IsOnline bool   `json:"isOnline"`
 }
 
 type Group struct {
@@ -22,6 +23,7 @@ type Conversation struct {
 	PhotoURL               string    `json:"photoUrl"`
 	LatestMessageTimestamp time.Time `json:"latestMessageTimestamp"`
 	LatestMessagePreview   string    `json:"latestMessagePreview"`
+	IsOnline               bool      `json:"isOnline"`
 }
 
 type Reaction struct {

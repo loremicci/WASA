@@ -49,16 +49,18 @@ func (db *appdbimpl) GetMyConversations(userId string) ([]Conversation, error) {
 		} else {
 			// Find the other user
 			otherUserQuery := `
-				SELECT u.name, u.photo_url 
+				SELECT u.name, u.photo_url, u.is_online
 				FROM users u 
 				JOIN conversation_members cm ON u.id = cm.user_id 
 				WHERE cm.conversation_id = ? AND cm.user_id != ? LIMIT 1
 			`
 			var otherName, otherPhoto sql.NullString
-			err := db.c.QueryRow(otherUserQuery, c.ID, userId).Scan(&otherName, &otherPhoto)
+			var otherOnline sql.NullBool
+			err := db.c.QueryRow(otherUserQuery, c.ID, userId).Scan(&otherName, &otherPhoto, &otherOnline)
 			if err == nil {
 				c.Name = otherName.String
 				c.PhotoURL = otherPhoto.String
+				c.IsOnline = otherOnline.Bool
 			}
 		}
 
